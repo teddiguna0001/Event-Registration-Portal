@@ -7,8 +7,6 @@ Open index.html in any modern browser
 
 Browse events → Register → Get QR code
 
-Admin login: username@student.gitam.edu / Gitam$$456
-
 📁 File Structure
 text
 ├── index.html      # Main HTML structure
