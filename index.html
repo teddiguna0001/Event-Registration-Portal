@@ -1,252 +1,289 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>GitHub Community GITAM — Event Portal</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GITHUB Event Registration Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js"></script>
+<!-- QR Code generator -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<!-- QR Code scanner (camera check-in) -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<!-- EmailJS for sending mail to registrants -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 </head>
 <body>
 
-<div class="circuit-bg" aria-hidden="true">
-  <svg viewBox="0 0 1200 800" preserveAspectRatio="none">
-    <path class="trace" d="M0,120 L200,120 L200,260 L460,260 L460,80 L760,80"></path>
-    <path class="trace" d="M1200,600 L980,600 L980,420 L700,420 L700,700 L360,700"></path>
-    <path class="trace" d="M0,700 L140,700 L140,540 L40,540"></path>
-    <circle class="node" cx="200" cy="120" r="3"></circle>
-    <circle class="node" cx="460" cy="260" r="3"></circle>
-    <circle class="node" cx="760" cy="80" r="3"></circle>
-    <circle class="node" cx="980" cy="420" r="3"></circle>
-    <circle class="node" cx="700" cy="700" r="3"></circle>
-  </svg>
-</div>
-
+<!-- ===================== TOP NAV ===================== -->
 <header class="topbar">
-  <div class="brand">
-    <div class="mark"><img src="githublogo.png" alt="GitHub Logo" class="github-logo"></div>
-    <div class="name">GitHub Community GITAM<span>Event Registration Portal</span></div>
-  </div>
-  <nav class="tabs" role="tablist" aria-label="Main navigation">
-    <button class="tab active" data-tab="events">Events Info</button>
-    <button class="tab" data-tab="register">Registration</button>
-    <button class="tab" data-tab="about">About</button>
-    <button class="tab admin-tab" data-tab="admin">Admin Login</button>
+    <div><img src="githublogoo.jpg" alt="GitHub Logo" class="github-logo"></div>
+    <div class="brand-text">
+      <span class="brand-title"><strong>GITHUB</strong> Event Registration Portal</span> 
+    </div>
+     
+
+  <nav class="navlinks" id="navlinks">
+    <button class="nav-btn active" data-page="dashboard"><strong>Dashboard</strong></button>
+    <button class="nav-btn" data-page="events-info"><strong>Events Info</strong></button>
+    <button class="nav-btn" data-page="registration"><strong>Registration</strong></button>
+    <button class="nav-btn" data-page="about"><strong>About</strong></button>
+    <button class="nav-btn" data-page="admin-login" id="adminNavBtn"><strong>Admin Login</strong></button>
   </nav>
+
+  <div class="top-actions">
+    <a class="github-icon-btn" href="https://github.com" target="_blank" rel="noopener" title="Sign in with GitHub" aria-label="Sign in with GitHub">
+      <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+        0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
+        -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
+        .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
+        -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68
+        0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56
+        .82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0
+        1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+      </svg>
+      <span class="github-icon-label"><strong>GitHub</strong></span>
+    </a>
+    <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+  </div>
 </header>
 
-<main>
+<main id="app">
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <section class="page active" id="page-dashboard">
+    <div class="hero">
+      <h1><strong>Every event, one repository.</strong></h1>
+      <p class="eyebrow"><strong>Portal --status</strong></p>
+      <p class="hero-sub"><strong>Track what's live, what's closed, and who's checked in</strong> — from AIML meetups to WebDev sprints.</p>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <span class="stat-label"><strong>total events</strong></span>
+        <span class="stat-value" id="statTotalEvents"><strong>0</strong></span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label"><strong>live now</strong></span>
+        <span class="stat-value accent-green" id="statLiveEvents"><strong>0</strong></span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label"><strong>closed</strong></span>
+        <span class="stat-value accent-red" id="statClosedEvents"><strong>0</strong></span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label"><strong>registrations</strong></span>
+        <span class="stat-value accent-purple" id="statTotalRegs"><strong>0</strong></span>
+      </div>
+    </div>
+
+    <h2 class="section-title"><strong>// upcoming events</strong></h2>
+    <div class="commit-graph" id="dashboardEventList">
+      <!-- populated by JS -->
+    </div>
+  </section>
 
   <!-- ===================== EVENTS INFO ===================== -->
-  <section id="tab-events" class="page active">
-    <p class="eyebrow">Learn · Collaborate · Contribute</p>
-    <h1 class="hero-title">Every event we run,<br><span class="accent">in one place.</span></h1>
-    <p class="hero-sub">Browse everything the community has scheduled — details, timings, locations and any resources the organisers have attached.</p>
-    <div id="events-grid-public" class="event-grid"></div>
+  <section class="page" id="page-events-info">
+    <h1 class="page-title"><strong>Events Info</strong></h1>
+    <p class="page-desc"><strong>Full details</strong> of every event on the portal, straight from the admin repository.</p>
+    <div class="event-grid" id="eventsInfoGrid"></div>
   </section>
 
   <!-- ===================== REGISTRATION ===================== -->
-  <section id="tab-register" class="page">
-    <p class="eyebrow">Reserve your seat</p>
-    <h2 class="section-title">Register for an event</h2>
-    <p class="section-desc">Fill in your details below. Your registration is saved instantly and a check-in QR code is generated for you to show at the event.</p>
+  <section class="page" id="page-registration">
+    <h1 class="page-title"><strong>Registration</strong></h1>
+    <p class="page-desc"><strong>Fill in your details below.</strong> Your registration is saved instantly and a check-in QR code is generated for you to show at the event.</p>
+    <p class="page-desc"><strong>Pick an event</strong> to pull up its registration form.</p>
 
-    <div class="reg-layout">
-      <div class="card reg-form">
-        <div class="field">
-          <label for="reg-event">Event <span class="req-star">*</span></label>
-          <select id="reg-event"></select>
-        </div>
-        <div class="field">
-          <label for="reg-name">Full name <span class="req-star">*</span></label>
-          <input type="text" id="reg-name" placeholder="e.g. Sai Kiran">
-        </div>
-        <div class="field">
-          <label for="reg-email">GITAM email <span class="req-star">*</span></label>
-          <input type="email" id="reg-email" placeholder="yourname@student.gitam.edu">
-        </div>
-        <div class="reg-row">
-          <div class="field">
-            <label for="reg-branch">Branch <span class="req-star">*</span></label>
-            <input type="text" id="reg-branch" placeholder="e.g. CSE">
-          </div>
-          <div class="field">
-            <label for="reg-year">Year <span class="req-star">*</span></label>
-            <select id="reg-year">
-              <option value="">Select</option>
-              <option>1st Year</option>
-              <option>2nd Year</option>
-              <option>3rd Year</option>
-              <option>4th Year</option>
-            </select>
-          </div>
-        </div>
-        <p class="error-text" id="reg-error">Please fill every field with a valid GITAM email before submitting.</p>
-        <button class="btn btn-primary" id="reg-submit-btn" style="width:100%;justify-content:center;margin-top:6px;">Submit registration</button>
-      </div>
+    <div class="field">
+      <label for="regEventSelect"><strong>Select event</strong></label>
+      <select id="regEventSelect">
+        <option value="">-- choose an event --</option>
+      </select>
+    </div>
 
-      <div>
-        <div class="card formspree-note">
-          <p><strong style="color:var(--ink);font-family:var(--disp);">Prefer the standalone form?</strong><br>The same registration also runs through our Formspree form — use it if you'd rather fill it outside the portal.</p>
-          <a class="btn btn-ghost btn-sm" href="https://formspree.io/f/mwlekoga" target="_blank" rel="noopener">Open external form ↗</a>
-        </div>
-        <div id="reg-success" class="card success-panel" style="display:none;">
-          <div class="check">✓</div>
-          <h2 class="section-title" style="margin-bottom:6px;">Registration saved</h2>
-          <p class="section-desc" style="margin-bottom:2px;">Show this QR code at check-in — the organiser will scan it to mark you present.</p>
-          <div id="qr-box"></div>
-          <p class="reg-id" id="reg-id-out"></p>
-          <button class="btn btn-ghost btn-sm" id="reg-again-btn" style="margin-top:16px;">Register another attendee</button>
-        </div>
+    <form id="registrationForm" class="card-form hidden">
+      <div class="field">
+        <label for="regName"><strong>Full name</strong></label>
+        <input type="text" id="regName" required placeholder="Jane Doe">
       </div>
+      <div class="field">
+        <label for="regEmail"><strong>GITAM email</strong></label>
+        <input type="email" id="regEmail" required placeholder="you@student.gitam.edu">
+      </div>
+      <div class="field">
+        <label for="regBranch"><strong>Branch</strong></label>
+        <input type="text" id="regBranch" required placeholder="CSE / ECE / IT ...">
+      </div>
+      <div class="field">
+        <label for="regYear"><strong>Year</strong></label>
+        <select id="regYear" required>
+          <option value="">select year</option>
+          <option><strong>1st Year</strong></option>
+          <option><strong>2nd Year</strong></option>
+          <option><strong>3rd Year</strong></option>
+          <option><strong>4th Year</strong></option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="regRoll"><strong>Registration number / Roll no.</strong></label>
+        <input type="text" id="regRoll" required placeholder="e.g. 21BCE1234">
+      </div>
+      <button type="submit" class="btn btn-primary"><strong>Save &amp; generate QR</strong></button>
+      <p class="form-msg" id="regFormMsg"></p>
+    </form>
+
+    <div class="qr-result hidden" id="qrResult">
+      <h3><strong>You're registered ✔</strong></h3>
+      <p><strong>This QR is your check-in pass</strong> — screenshot it or keep this page open.</p>
+      <div id="qrCodeBox"></div>
+      <p class="mono-small" id="qrRegInfo"></p>
+      <button class="btn btn-ghost" id="registerAnotherBtn"><strong>Register another</strong></button>
     </div>
   </section>
 
   <!-- ===================== ABOUT ===================== -->
-  <section id="tab-about" class="page">
-    <p class="eyebrow">Who we are</p>
-    <h1 class="hero-title">Built by students,<br><span class="accent">shipped in the open.</span></h1>
-    <p class="hero-sub">GitHub Community GITAM is a student community organised around the domains below. Every event on this portal is run by one of these teams.</p>
+  <section class="page" id="page-about">
+    <h1 class="page-title"><strong>About</strong></h1>
+    <p class="page-desc"><strong>The GITHUB Event Registration Portal</strong> runs everything from workshops to hackathons across these domains:</p>
 
-    <div class="domain-track">
-      <span class="tag tech">Technical</span>
-      <span class="tag nontech">Non-technical</span>
+    <div class="domain-grid">
+      <div class="domain-card"><span class="domain-tag"><strong>01</strong></span><h3><strong>AI / ML</strong></h3><p>Model building, data pipelines, and applied machine learning sessions.</p></div>
+      <div class="domain-card"><span class="domain-tag"><strong>02</strong></span><h3><strong>Web Development</strong></h3><p>Frontend, backend, and full-stack workshops — from HTML to production deploys.</p></div>
+      <div class="domain-card"><span class="domain-tag"><strong>03</strong></span><h3><strong>App Development</strong></h3><p>Android, iOS, and cross-platform builds for mobile-first products.</p></div>
+      <div class="domain-card"><span class="domain-tag"><strong>04</strong></span><h3><strong>Cloud &amp; DevOps</strong></h3><p>CI/CD, containers, and cloud infrastructure, hands-on.</p></div>
+      <div class="domain-card"><span class="domain-tag"><strong>05</strong></span><h3><strong>Cybersecurity</strong></h3><p>Ethical hacking, CTFs, and secure-by-design practice.</p></div>
+      <div class="domain-card"><span class="domain-tag"><strong>06</strong></span><h3><strong>Open Source</strong></h3><p>Git workflows, contributing to real repos, and maintaining projects.</p></div>
     </div>
 
-    <div class="domain-grid" id="domain-grid"></div>
+    <p class="contact-line"><strong>Questions?</strong> Reach the organizing team at <a href="mailto:gteddi@student.gitam.edu"><strong>gteddi@student.gitam.edu</strong></a></p>
   </section>
 
-  <!-- ===================== ADMIN ===================== -->
-  <section id="tab-admin" class="page">
+  <!-- ===================== ADMIN LOGIN ===================== -->
+  <section class="page" id="page-admin-login">
+    <div class="login-wrap">
+      <h1 class="page-title"><strong>Admin Login</strong></h1>
+      <p class="page-desc"><strong>Restricted</strong> to GITAM student staff accounts.</p>
+      <form id="adminLoginForm" class="card-form narrow">
+        <div class="field">
+          <label for="adminUser"><strong>Username (@student.gitam.edu)</strong></label>
+          <input type="email" id="adminUser" required placeholder="admin@student.gitam.edu">
+        </div>
+        <div class="field">
+          <label for="adminPass"><strong>Password</strong></label>
+          <input type="password" id="adminPass" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary"><strong>Login</strong></button>
+        <p class="form-msg" id="adminLoginMsg"></p>
+      </form>
+    </div>
+  </section>
 
-    <div id="admin-login-view" class="admin-shell">
-      <div class="card admin-login-card">
-        <div class="lock">🔒</div>
-        <h2 class="section-title" style="margin-bottom:4px;">Admin login</h2>
-        <p class="section-desc">Organiser access only — manage events and check-ins.</p>
-        <div class="field">
-          <label for="admin-user">Username</label>
-          <input type="text" id="admin-user" placeholder="yourname@student.gitam.edu">
-        </div>
-        <div class="field">
-          <label for="admin-pass">Password</label>
-          <input type="password" id="admin-pass" placeholder="••••••••">
-        </div>
-        <p class="error-text" id="admin-error">Invalid credentials. Check your username and password.</p>
-        <button class="btn btn-gold" id="admin-login-btn" style="width:100%;justify-content:center;margin-top:6px;">Log in</button>
-        <p class="hint" style="margin-top:14px;">Username must end in <strong>@student.gitam.edu</strong></p>
-      </div>
+  <!-- ===================== ADMIN PANEL ===================== -->
+  <section class="page" id="page-admin-panel">
+    <div class="admin-header">
+      <h1 class="page-title"><strong>Admin Login</strong></h1>
+      <button class="btn btn-ghost" id="logoutBtn"><strong>Logout</strong></button>
     </div>
 
-    <div id="admin-dashboard-view" hidden>
-      <div class="admin-top">
-        <div>
-          <p class="eyebrow" style="margin-bottom:4px;">Signed in as <span id="admin-user-out" style="color:var(--ink);"></span></p>
-          <h2 class="section-title">Organiser dashboard</h2>
+    <div class="admin-tabs">
+      <button class="admin-tab-btn active" data-tab="manage-events"><strong>Add / Edit Events</strong></button>
+      <button class="admin-tab-btn" data-tab="manage-checkin"><strong>Check-in &amp; Mail</strong></button>
+    </div>
+
+    <!-- Add / Edit events -->
+    <div class="admin-tab-panel active" id="tab-manage-events">
+      <form id="eventForm" class="card-form">
+        <input type="hidden" id="eventId">
+        <div class="field">
+          <label for="eventName"><strong>Event name</strong></label>
+          <input type="text" id="eventName" required placeholder="AI/ML Bootcamp">
         </div>
-        <button class="btn btn-ghost btn-sm" id="admin-logout-btn">Log out</button>
-      </div>
-
-      <div class="admin-subtabs">
-        <button class="subtab active" data-sub="manage">Manage events</button>
-        <button class="subtab" data-sub="scan">Scan attendance</button>
-        <button class="subtab" data-sub="regs">Registrations</button>
-      </div>
-
-      <!-- Manage events -->
-      <div class="admin-pane active" id="admin-pane-manage">
-        <div class="card add-event-card">
-          <h3 class="section-title" style="font-size:18px;" id="event-form-title">Add a new event</h3>
-          <input type="hidden" id="event-edit-id">
-          <div class="form-grid">
-            <div class="field full">
-              <label for="ev-name">Event name <span class="req-star">*</span></label>
-              <input type="text" id="ev-name" placeholder="e.g. Open Source Induction Meet">
-            </div>
-            <div class="field">
-              <label for="ev-date">Date <span class="req-star">*</span></label>
-              <input type="date" id="ev-date">
-            </div>
-            <div class="field">
-              <label for="ev-time">Time <span class="req-star">*</span></label>
-              <input type="time" id="ev-time">
-            </div>
-            <div class="field full">
-              <label for="ev-location">Location <span class="req-star">*</span></label>
-              <input type="text" id="ev-location" placeholder="e.g. GITAM Convention Centre, Block C">
-            </div>
-            <div class="field">
-              <label for="ev-image">Event image</label>
-              <div class="file-row">
-                <input type="file" id="ev-image" accept="image/*">
-              </div>
-              <span class="fname" id="ev-image-name"></span>
-            </div>
-            <div class="field">
-              <label for="ev-doc">Document <span style="color:var(--muted-2);font-weight:400;">(optional)</span></label>
-              <div class="file-row">
-                <input type="file" id="ev-doc">
-              </div>
-              <span class="fname" id="ev-doc-name"></span>
-            </div>
+        <div class="field">
+          <label for="eventImage"><strong>Event image</strong></label>
+          <input type="file" id="eventImage" accept="image/*">
+          <img id="eventImagePreview" class="img-preview hidden">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="eventDate"><strong>Date</strong></label>
+            <input type="date" id="eventDate" required>
           </div>
-          <p class="error-text" id="event-error">Please fill in name, date, time and location.</p>
-          <div style="display:flex; gap:10px; margin-top:16px;">
-            <button class="btn btn-primary" id="event-save-btn">Add event</button>
-            <button class="btn btn-ghost" id="event-cancel-edit-btn" style="display:none;">Cancel edit</button>
+          <div class="field">
+            <label for="eventStart"><strong>Start time</strong></label>
+            <input type="time" id="eventStart" required>
+          </div>
+          <div class="field">
+            <label for="eventEnd"><strong>End time</strong></label>
+            <input type="time" id="eventEnd" required>
           </div>
         </div>
+        <div class="field">
+          <label for="eventLocation"><strong>Location</strong></label>
+          <input type="text" id="eventLocation" required placeholder="Main Auditorium">
+        </div>
+        <div class="field">
+          <label for="eventDoc"><strong>Document (optional)</strong></label>
+          <input type="file" id="eventDoc" accept=".pdf,.doc,.docx,image/*">
+          <span class="mono-small" id="eventDocName"></span>
+        </div>
+        <div class="field">
+          <label for="eventStatus"><strong>Status</strong></label>
+          <select id="eventStatus">
+            <option value="Upcoming"><strong>Upcoming</strong></option>
+            <option value="live"><strong>Live</strong></option>
+            <option value="closed"><strong>Closed</strong></option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button type="submit" class="btn btn-primary" id="eventFormSubmitBtn"><strong>Add event</strong></button>
+          <button type="button" class="btn btn-ghost hidden" id="cancelEditBtn"><strong>Cancel edit</strong></button>
+        </div>
+        <p class="form-msg" id="eventFormMsg"></p>
+      </form>
 
-        <h3 class="section-title" style="font-size:16px;margin-bottom:14px;">Live events (<span id="admin-event-count">0</span>)</h3>
-        <div id="admin-events-list"></div>
+      <h2 class="section-title"><strong>// all events</strong></h2>
+      <div class="admin-event-list" id="adminEventList"></div>
+    </div>
+
+    <!-- Check-in & mail -->
+    <div class="admin-tab-panel" id="tab-manage-checkin">
+      <div class="field">
+        <label for="checkinEventSelect"><strong>Select event</strong></label>
+        <select id="checkinEventSelect">
+          <option value="">-- choose an event --</option>
+        </select>
       </div>
 
-      <!-- Scan attendance -->
-      <div class="admin-pane" id="admin-pane-scan">
-        <div class="scan-layout">
-          <div class="card" style="padding:18px;">
-            <h3 class="section-title" style="font-size:16px;">Camera check-in</h3>
-            <p class="section-desc" style="margin-bottom:14px;">Point an attendee's QR code at the camera.</p>
-            <div id="video-wrap">
-              <video id="scan-video" playsinline muted></video>
-              <div class="scan-frame"></div>
+      <div id="checkinArea" class="hidden">
+        <div class="checkin-controls">
+          <div class="field">
+            <label for="checkinRollInput"><strong>Enter registration number / roll no. to check in</strong></label>
+            <div class="inline-row">
+              <input type="text" id="checkinRollInput" placeholder="e.g. 21BCE1234">
+              <button class="btn btn-primary" id="checkinRollBtn"><strong>Check in</strong></button>
             </div>
-            <canvas id="scan-canvas" style="display:none;"></canvas>
-            <div style="display:flex; gap:10px; margin-top:12px;">
-              <button class="btn btn-primary btn-sm" id="scan-start-btn">Start camera</button>
-              <button class="btn btn-ghost btn-sm" id="scan-stop-btn" style="display:none;">Stop camera</button>
-            </div>
-            <p class="scan-status" id="scan-status">Camera is off.</p>
           </div>
-
-          <div class="card manual-scan" style="padding:18px;">
-            <h3 class="section-title" style="font-size:16px;">Manual check-in</h3>
-            <p class="section-desc" style="margin-bottom:14px;">No camera? Paste the scanned QR text, type the registration ID, or just type the attendee's name.</p>
-            <div class="field">
-              <label for="manual-scan-input">QR text / Registration ID / Name</label>
-              <textarea id="manual-scan-input" rows="3" placeholder="REG-xxxxxxx, full QR text, or attendee name"></textarea>
-            </div>
-            <button class="btn btn-gold btn-sm" id="manual-scan-btn">Check in</button>
-
-            <div class="scan-result" id="scan-result">
-              <p style="margin:0 0 4px; font-family:var(--disp); font-weight:600;" id="scan-result-title"></p>
-              <p style="margin:0; font-size:12.5px; color:var(--muted);" id="scan-result-body"></p>
-            </div>
+          <div class="field">
+            <button class="btn btn-ghost" id="toggleScannerBtn"><strong>📷 Scan QR to check in</strong></button>
+            <div id="qrScannerBox" class="hidden"></div>
+          </div>
+          <div class="field">
+            <button class="btn btn-ghost" id="sendMailBtn"><strong>✉ Email all registered</strong></button>
+            <span class="mono-small" id="mailStatus"></span>
           </div>
         </div>
-      </div>
 
-      <!-- Registrations -->
-      <div class="admin-pane" id="admin-pane-regs">
-        <h3 class="section-title" style="font-size:16px;">All registrations (<span id="reg-count">0</span>)</h3>
-        <p class="section-desc">Attendance updates automatically as you scan attendees in.</p>
-        <div class="card table-wrap">
-          <table class="reg-table" id="regs-table">
+        <h2 class="section-title"><strong>// registrations</strong></h2>
+        <div class="table-wrap">
+          <table class="reg-table">
             <thead>
-              <tr><th>Name</th><th>Email</th><th>Branch</th><th>Year</th><th>Event</th><th>Attended</th><th>ID</th></tr>
+              <tr><th><strong>Name</strong></th><th><strong>Email</strong></th><th><strong>Branch</strong></th><th><strong>Year</strong></th><th><strong>Reg No.</strong></th><th><strong>Checked in</strong></th></tr>
             </thead>
-            <tbody id="regs-tbody"></tbody>
+            <tbody id="regTableBody"></tbody>
           </table>
         </div>
       </div>
@@ -255,49 +292,9 @@
 
 </main>
 
-<footer>GITHUB COMMUNITY GITAM · RECRUITMENT 2026 · BE A PART OF SOMETHING BIGGER</footer>
-
-<!-- Edit event modal -->
-<div class="overlay" id="edit-overlay">
-  <div class="modal">
-    <div class="modal-head">
-      <h3>Edit event</h3>
-      <button class="close-x" id="edit-close-x">&times;</button>
-    </div>
-    <div class="form-grid">
-      <div class="field full">
-        <label for="em-name">Event name</label>
-        <input type="text" id="em-name">
-      </div>
-      <div class="field">
-        <label for="em-date">Date</label>
-        <input type="date" id="em-date">
-      </div>
-      <div class="field">
-        <label for="em-time">Time</label>
-        <input type="time" id="em-time">
-      </div>
-      <div class="field full">
-        <label for="em-location">Location</label>
-        <input type="text" id="em-location">
-      </div>
-      <div class="field">
-        <label for="em-image">Replace image</label>
-        <input type="file" id="em-image" accept="image/*">
-      </div>
-      <div class="field">
-        <label for="em-doc">Replace document</label>
-        <input type="file" id="em-doc">
-      </div>
-    </div>
-    <div style="display:flex; gap:10px; margin-top:8px;">
-      <button class="btn btn-primary" id="em-save-btn">Save changes</button>
-      <button class="btn btn-ghost" id="edit-close-btn">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast-wrap"></div>
+<footer class="site-footer">
+  <span><strong>GITHUB Event Registration Portal</strong> · organizer: <strong>gteddi@student.gitam.edu</strong></span>
+</footer>
 
 <script src="script.js"></script>
 </body>
