@@ -1,9 +1,8 @@
- /* ==========================================================================
+/* ==========================================================================
    GITHUB Event Registration Portal
-   All data persists in the browser via localStorage (this is a static
-   front-end demo with no server, so "permanent" storage = this browser/
-   device's localStorage — see the note in the chat reply for how to wire
-   up a real backend later).
+   Data now persists in Supabase (Postgres) instead of localStorage, so it
+   survives across browsers/devices. See supabaseClient.js for connection
+   config and supabase-schema.sql for the table/RLS setup this expects.
    ========================================================================== */
 
 /* ---------- CONFIG: fill these in with your own EmailJS account ---------- */
@@ -20,11 +19,105 @@ if (window.emailjs && EMAILJS_PUBLIC_KEY !== "YOUR_EMAILJS_PUBLIC_KEY") {
 }
 
 /* ---------------------------- storage helpers ---------------------------- */
+/* Maps between the camelCase shape the UI code uses and the snake_case
+   columns in Supabase. */
+function rowToEvent(row){
+  return {
+    id: row.id,
+    name: row.name,
+    image: row.image,
+    date: row.date,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    location: row.location,
+    doc: row.doc,
+    docName: row.doc_name,
+    status: row.status
+  };
+}
+function eventToRow(ev){
+  return {
+    id: ev.id,
+    name: ev.name,
+    image: ev.image,
+    date: ev.date || null,
+    start_time: ev.startTime,
+    end_time: ev.endTime,
+    location: ev.location,
+    doc: ev.doc,
+    doc_name: ev.docName,
+    status: ev.status
+  };
+}
+function rowToReg(row){
+  return {
+    id: row.id,
+    eventId: row.event_id,
+    name: row.name,
+    email: row.email,
+    branch: row.branch,
+    year: row.year,
+    rollNo: row.roll_no,
+    checkedIn: row.checked_in,
+    registeredAt: row.registered_at
+  };
+}
+function regToRow(reg, eventId){
+  return {
+    id: reg.id,
+    event_id: eventId,
+    name: reg.name,
+    email: reg.email,
+    branch: reg.branch,
+    year: reg.year,
+    roll_no: reg.rollNo,
+    checked_in: reg.checkedIn,
+    registered_at: reg.registeredAt
+  };
+}
+
+function showSupabaseError(err, context){
+  console.error(context, err);
+  alert(`${context}: ${err.message || err}`);
+}
+
 const store = {
-  getEvents(){ return JSON.parse(localStorage.getItem("gep_events") || "[]"); },
-  saveEvents(list){ localStorage.setItem("gep_events", JSON.stringify(list)); },
-  getRegs(){ return JSON.parse(localStorage.getItem("gep_registrations") || "{}"); },
-  saveRegs(obj){ localStorage.setItem("gep_registrations", JSON.stringify(obj)); }
+  async getEvents(){
+    const { data, error } = await supabase.from("events").select("*").order("date", { ascending: true });
+    if(error){ showSupabaseError(error, "Couldn't load events"); return []; }
+    return (data || []).map(rowToEvent);
+  },
+  async upsertEvent(eventObj){
+    const { error } = await supabase.from("events").upsert(eventToRow(eventObj));
+    if(error){ showSupabaseError(error, "Couldn't save event"); return false; }
+    return true;
+  },
+  async deleteEvent(id){
+    // registrations for this event cascade-delete via the FK in supabase-schema.sql,
+    // but we also clear them explicitly in case that constraint isn't set up.
+    await supabase.from("registrations").delete().eq("event_id", id);
+    const { error } = await supabase.from("events").delete().eq("id", id);
+    if(error){ showSupabaseError(error, "Couldn't delete event"); return false; }
+    return true;
+  },
+  /** Pass an eventId to get just that event's registrations, or omit it for all. */
+  async getRegs(eventId){
+    let query = supabase.from("registrations").select("*");
+    if(eventId) query = query.eq("event_id", eventId);
+    const { data, error } = await query;
+    if(error){ showSupabaseError(error, "Couldn't load registrations"); return []; }
+    return (data || []).map(rowToReg);
+  },
+  async addReg(reg, eventId){
+    const { error } = await supabase.from("registrations").insert(regToRow(reg, eventId));
+    if(error){ showSupabaseError(error, "Couldn't save registration"); return false; }
+    return true;
+  },
+  async setCheckedIn(regId, checkedIn){
+    const { error } = await supabase.from("registrations").update({ checked_in: checkedIn }).eq("id", regId);
+    if(error){ showSupabaseError(error, "Couldn't update check-in"); return false; }
+    return true;
+  }
 };
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
@@ -47,17 +140,17 @@ function fileToDataURL(file){
 const pages = document.querySelectorAll(".page");
 const navButtons = document.querySelectorAll(".nav-btn");
 
-function showPage(id){
+async function showPage(id){
   pages.forEach(p=>p.classList.toggle("active", p.id === "page-"+id));
   navButtons.forEach(b=>b.classList.toggle("active", b.dataset.page === id));
   document.getElementById("navlinks").classList.remove("open");
   if(id === "admin-login" && sessionStorage.getItem("gep_admin") === "yes"){
-    renderAdminPanel();
+    await renderAdminPanel();
     pages.forEach(p=>p.classList.toggle("active", p.id === "page-admin-panel"));
   }
-  if(id === "dashboard") renderDashboard();
-  if(id === "events-info") renderEventsInfo();
-  if(id === "registration") renderRegistrationSelect();
+  if(id === "dashboard") await renderDashboard();
+  if(id === "events-info") await renderEventsInfo();
+  if(id === "registration") await renderRegistrationSelect();
 }
 
 navButtons.forEach(btn=>{
@@ -68,14 +161,13 @@ document.getElementById("hamburger").addEventListener("click", ()=>{
 });
 
 /* ------------------------------- dashboard -------------------------------- */
-function renderDashboard(){
-  const events = store.getEvents();
-  const regs = store.getRegs();
+async function renderDashboard(){
+  const events = await store.getEvents();
+  const allRegs = await store.getRegs();
   document.getElementById("statTotalEvents").textContent = events.length;
   document.getElementById("statLiveEvents").textContent = events.filter(e=>e.status==="live").length;
   document.getElementById("statClosedEvents").textContent = events.filter(e=>e.status==="closed").length;
-  const totalRegs = Object.values(regs).reduce((sum,arr)=>sum+arr.length,0);
-  document.getElementById("statTotalRegs").textContent = totalRegs;
+  document.getElementById("statTotalRegs").textContent = allRegs.length;
 
   const list = document.getElementById("dashboardEventList");
   list.innerHTML = "";
@@ -96,8 +188,8 @@ function renderDashboard(){
 }
 
 /* ----------------------------- events info -------------------------------- */
-function renderEventsInfo(){
-  const events = store.getEvents();
+async function renderEventsInfo(){
+  const events = await store.getEvents();
   const grid = document.getElementById("eventsInfoGrid");
   grid.innerHTML = "";
   if(events.length === 0){
@@ -121,8 +213,8 @@ function renderEventsInfo(){
 }
 
 /* ---------------------------- registration page ---------------------------- */
-function renderRegistrationSelect(){
-  const events = store.getEvents().filter(e=>e.status==="live");
+async function renderRegistrationSelect(){
+  const events = (await store.getEvents()).filter(e=>e.status==="live");
   const sel = document.getElementById("regEventSelect");
   sel.innerHTML = `<option value="">-- choose an event --</option>` +
     events.map(e=>`<option value="${e.id}">${escapeHtml(e.name)} — ${fmtDate(e.date)}</option>`).join("");
@@ -136,10 +228,10 @@ document.getElementById("regEventSelect").addEventListener("change", (e)=>{
   document.getElementById("qrResult").classList.add("hidden");
 });
 
-document.getElementById("registrationForm").addEventListener("submit", (e)=>{
+document.getElementById("registrationForm").addEventListener("submit", async (e)=>{
   e.preventDefault();
   const eventId = document.getElementById("regEventSelect").value;
-  const events = store.getEvents();
+  const events = await store.getEvents();
   const ev = events.find(x=>x.id===eventId);
   if(!ev){ return; }
 
@@ -154,17 +246,17 @@ document.getElementById("registrationForm").addEventListener("submit", (e)=>{
     registeredAt: new Date().toISOString()
   };
 
-  const regs = store.getRegs();
-  regs[eventId] = regs[eventId] || [];
-  const dup = regs[eventId].find(r=>r.rollNo.toLowerCase() === reg.rollNo.toLowerCase());
   const msg = document.getElementById("regFormMsg");
+  const existingRegs = await store.getRegs(eventId);
+  const dup = existingRegs.find(r=>r.rollNo.toLowerCase() === reg.rollNo.toLowerCase());
   if(dup){
     msg.textContent = "This registration number has already registered for this event.";
     msg.className = "form-msg error";
     return;
   }
-  regs[eventId].push(reg);
-  store.saveRegs(regs);
+
+  const ok = await store.addReg(reg, eventId);
+  if(!ok) return;
 
   msg.textContent = "";
   document.getElementById("registrationForm").classList.add("hidden");
@@ -183,7 +275,7 @@ document.getElementById("registrationForm").addEventListener("submit", (e)=>{
 document.getElementById("registerAnotherBtn").addEventListener("click", renderRegistrationSelect);
 
 /* ----------------------------- admin login -------------------------------- */
-document.getElementById("adminLoginForm").addEventListener("submit", (e)=>{
+document.getElementById("adminLoginForm").addEventListener("submit", async (e)=>{
   e.preventDefault();
   const user = document.getElementById("adminUser").value.trim();
   const pass = document.getElementById("adminPass").value;
@@ -193,7 +285,7 @@ document.getElementById("adminLoginForm").addEventListener("submit", (e)=>{
     sessionStorage.setItem("gep_admin","yes");
     msg.textContent = "";
     document.getElementById("adminLoginForm").reset();
-    renderAdminPanel();
+    await renderAdminPanel();
     pages.forEach(p=>p.classList.toggle("active", p.id === "page-admin-panel"));
     navButtons.forEach(b=>b.classList.toggle("active", b.dataset.page === "admin-login"));
   } else {
@@ -208,9 +300,9 @@ document.getElementById("logoutBtn").addEventListener("click", ()=>{
 });
 
 /* ------------------------------ admin panel -------------------------------- */
-function renderAdminPanel(){
-  renderAdminEventList();
-  renderCheckinEventSelect();
+async function renderAdminPanel(){
+  await renderAdminEventList();
+  await renderCheckinEventSelect();
 }
 
 /* --- admin tabs --- */
@@ -238,7 +330,7 @@ const eventForm = document.getElementById("eventForm");
 eventForm.addEventListener("submit", async (e)=>{
   e.preventDefault();
   const id = document.getElementById("eventId").value || uid();
-  const events = store.getEvents();
+  const events = await store.getEvents();
   const existing = events.find(x=>x.id===id);
 
   const imageFile = document.getElementById("eventImage").files[0];
@@ -260,19 +352,15 @@ eventForm.addEventListener("submit", async (e)=>{
     status: document.getElementById("eventStatus").value
   };
 
-  if(existing){
-    Object.assign(existing, eventObj);
-  } else {
-    events.push(eventObj);
-  }
-  store.saveEvents(events);
+  const ok = await store.upsertEvent(eventObj);
+  if(!ok) return;
 
   const msg = document.getElementById("eventFormMsg");
   msg.textContent = existing ? "Event updated." : "Event added.";
   msg.className = "form-msg success";
   resetEventForm();
-  renderAdminEventList();
-  renderCheckinEventSelect();
+  await renderAdminEventList();
+  await renderCheckinEventSelect();
   setTimeout(()=>{ msg.textContent=""; }, 2500);
 });
 
@@ -286,8 +374,8 @@ function resetEventForm(){
 }
 document.getElementById("cancelEditBtn").addEventListener("click", resetEventForm);
 
-function renderAdminEventList(){
-  const events = store.getEvents();
+async function renderAdminEventList(){
+  const events = await store.getEvents();
   const wrap = document.getElementById("adminEventList");
   wrap.innerHTML = "";
   if(events.length === 0){
@@ -313,9 +401,9 @@ function renderAdminEventList(){
   });
 
   wrap.querySelectorAll("button").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
+    btn.addEventListener("click", async ()=>{
       const id = btn.dataset.id;
-      const events = store.getEvents();
+      const events = await store.getEvents();
       const ev = events.find(x=>x.id===id);
       if(!ev) return;
 
@@ -337,45 +425,42 @@ function renderAdminEventList(){
 
       if(btn.dataset.action === "toggle"){
         ev.status = ev.status === "live" ? "closed" : "live";
-        store.saveEvents(events);
-        renderAdminEventList();
+        await store.upsertEvent(ev);
+        await renderAdminEventList();
       }
 
       if(btn.dataset.action === "delete"){
         if(!confirm(`Delete "${ev.name}"? This also removes its registrations.`)) return;
-        const remaining = events.filter(x=>x.id!==id);
-        store.saveEvents(remaining);
-        const regs = store.getRegs();
-        delete regs[id];
-        store.saveRegs(regs);
-        renderAdminEventList();
-        renderCheckinEventSelect();
+        const ok = await store.deleteEvent(id);
+        if(!ok) return;
+        await renderAdminEventList();
+        await renderCheckinEventSelect();
       }
     });
   });
 }
 
 /* ------------------------- check-in & mail tab ------------------------- */
-function renderCheckinEventSelect(){
-  const events = store.getEvents();
+async function renderCheckinEventSelect(){
+  const events = await store.getEvents();
   const sel = document.getElementById("checkinEventSelect");
   sel.innerHTML = `<option value="">-- choose an event --</option>` +
     events.map(e=>`<option value="${e.id}">${escapeHtml(e.name)} — ${fmtDate(e.date)}</option>`).join("");
   document.getElementById("checkinArea").classList.add("hidden");
 }
 
-document.getElementById("checkinEventSelect").addEventListener("change", (e)=>{
+document.getElementById("checkinEventSelect").addEventListener("change", async (e)=>{
   document.getElementById("checkinArea").classList.toggle("hidden", !e.target.value);
-  renderRegTable();
+  await renderRegTable();
 });
 
 function currentCheckinEventId(){
   return document.getElementById("checkinEventSelect").value;
 }
 
-function renderRegTable(){
+async function renderRegTable(){
   const eventId = currentCheckinEventId();
-  const regs = store.getRegs()[eventId] || [];
+  const regs = eventId ? await store.getRegs(eventId) : [];
   const tbody = document.getElementById("regTableBody");
   tbody.innerHTML = "";
   if(regs.length === 0){
@@ -396,23 +481,22 @@ function renderRegTable(){
   });
 }
 
-function checkInByRoll(rollNo){
+async function checkInByRoll(rollNo){
   const eventId = currentCheckinEventId();
   if(!eventId) return { ok:false, message:"Select an event first." };
-  const regs = store.getRegs();
-  const list = regs[eventId] || [];
+  const list = await store.getRegs(eventId);
   const match = list.find(r=>r.rollNo.toLowerCase() === rollNo.trim().toLowerCase());
   if(!match) return { ok:false, message:"No registration found with that number for this event." };
   if(match.checkedIn) return { ok:false, message:`${match.name} is already checked in.` };
-  match.checkedIn = true;
-  store.saveRegs(regs);
-  renderRegTable();
+  const ok = await store.setCheckedIn(match.id, true);
+  if(!ok) return { ok:false, message:"Couldn't save check-in — try again." };
+  await renderRegTable();
   return { ok:true, message:`Checked in: ${match.name} (${match.rollNo}).` };
 }
 
-document.getElementById("checkinRollBtn").addEventListener("click", ()=>{
+document.getElementById("checkinRollBtn").addEventListener("click", async ()=>{
   const input = document.getElementById("checkinRollInput");
-  const res = checkInByRoll(input.value);
+  const res = await checkInByRoll(input.value);
   alert(res.message);
   if(res.ok) input.value = "";
 });
@@ -431,12 +515,12 @@ document.getElementById("toggleScannerBtn").addEventListener("click", ()=>{
     scannerInstance.start(
       { facingMode: "environment" },
       { fps: 10, qrbox: 220 },
-      (decodedText)=>{
+      async (decodedText)=>{
         const [scannedEventId, rollNo] = decodedText.split("::");
         if(scannedEventId !== eventId){
           return; // ignore QR codes from other events, keep scanning
         }
-        const res = checkInByRoll(rollNo);
+        const res = await checkInByRoll(rollNo);
         if(res.ok){
           scannerInstance.pause();
           alert(res.message);
@@ -457,9 +541,9 @@ document.getElementById("toggleScannerBtn").addEventListener("click", ()=>{
 /* --- send mail to all registered --- */
 document.getElementById("sendMailBtn").addEventListener("click", async ()=>{
   const eventId = currentCheckinEventId();
-  const events = store.getEvents();
+  const events = await store.getEvents();
   const ev = events.find(x=>x.id===eventId);
-  const regs = (store.getRegs()[eventId] || []);
+  const regs = eventId ? await store.getRegs(eventId) : [];
   const status = document.getElementById("mailStatus");
 
   if(!ev || regs.length === 0){
