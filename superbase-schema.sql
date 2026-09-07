@@ -1,4 +1,4 @@
-/* ==========================================================================
+ /* ==========================================================================
    Supabase client config
    Fill in SUPABASE_URL and SUPABASE_ANON_KEY from your Supabase project:
    Project Settings -> API -> Project URL / anon public key.
