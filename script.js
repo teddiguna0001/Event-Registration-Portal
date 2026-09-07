@@ -6,9 +6,9 @@
    ========================================================================== */
 
 /* ---------- CONFIG: fill these in with your own EmailJS account ---------- */
-const EMAILJS_PUBLIC_KEY  = "YOUR_EMAILJS_PUBLIC_KEY";
-const EMAILJS_SERVICE_ID  = "YOUR_EMAILJS_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_EMAILJS_TEMPLATE_ID";
+const EMAILJS_PUBLIC_KEY  = "C7_WFUoZtMtziOT90";
+const EMAILJS_SERVICE_ID  = "service_5wa4ftp";
+const EMAILJS_TEMPLATE_ID = "template_0e7pwu9";
 const ORGANIZER_EMAIL     = "gteddi@student.gitam.edu";
 
 const ADMIN_USER_PATTERN = /^[a-zA-Z0-9._%+-]+@student\.gitam\.edu$/i;
