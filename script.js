@@ -83,38 +83,38 @@ function showSupabaseError(err, context){
 
 const store = {
   async getEvents(){
-    const { data, error } = await supabase.from("events").select("*").order("date", { ascending: true });
+    const { data, error } = await supabaseClient.from("events").select("*").order("date", { ascending: true });
     if(error){ showSupabaseError(error, "Couldn't load events"); return []; }
     return (data || []).map(rowToEvent);
   },
   async upsertEvent(eventObj){
-    const { error } = await supabase.from("events").upsert(eventToRow(eventObj));
+    const { error } = await supabaseClient.from("events").upsert(eventToRow(eventObj));
     if(error){ showSupabaseError(error, "Couldn't save event"); return false; }
     return true;
   },
   async deleteEvent(id){
     // registrations for this event cascade-delete via the FK in supabase-schema.sql,
     // but we also clear them explicitly in case that constraint isn't set up.
-    await supabase.from("registrations").delete().eq("event_id", id);
-    const { error } = await supabase.from("events").delete().eq("id", id);
+    await supabaseClient.from("registrations").delete().eq("event_id", id);
+    const { error } = await supabaseClient.from("events").delete().eq("id", id);
     if(error){ showSupabaseError(error, "Couldn't delete event"); return false; }
     return true;
   },
   /** Pass an eventId to get just that event's registrations, or omit it for all. */
   async getRegs(eventId){
-    let query = supabase.from("registrations").select("*");
+    let query = supabaseClient.from("registrations").select("*");
     if(eventId) query = query.eq("event_id", eventId);
     const { data, error } = await query;
     if(error){ showSupabaseError(error, "Couldn't load registrations"); return []; }
     return (data || []).map(rowToReg);
   },
   async addReg(reg, eventId){
-    const { error } = await supabase.from("registrations").insert(regToRow(reg, eventId));
+    const { error } = await supabaseClient.from("registrations").insert(regToRow(reg, eventId));
     if(error){ showSupabaseError(error, "Couldn't save registration"); return false; }
     return true;
   },
   async setCheckedIn(regId, checkedIn){
-    const { error } = await supabase.from("registrations").update({ checked_in: checkedIn }).eq("id", regId);
+    const { error } = await supabaseClient.from("registrations").update({ checked_in: checkedIn }).eq("id", regId);
     if(error){ showSupabaseError(error, "Couldn't update check-in"); return false; }
     return true;
   }
